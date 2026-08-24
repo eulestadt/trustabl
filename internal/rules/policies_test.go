@@ -4410,6 +4410,54 @@ var policyAgentRuleCases = []policyAgentCase{
 			"const r = await generateText({ model: openai(\"gpt-5\"), tools: { weather: weatherTool } });\n"),
 		models.RepoInventory{},
 		false},
+
+	// ─── ADK-112 workflow agent without a description ────────────────────────
+	// ADK-101 makes this check for LlmAgent; the workflow classes were
+	// uncovered — adk_sequential_agent / adk_parallel_agent had no rule at all.
+	// One fire case per class in applies_to, so all three are exercised rather
+	// than assumed to behave alike.
+	{"ADK-112 fires when SequentialAgent has no description", "ADK-112",
+		models.AgentDef{
+			SDK: models.SDKGoogleADK, Class: "SequentialAgent",
+			Language: models.LanguagePython, Name: "pipeline",
+			Kwargs: &models.KwargTree{Children: map[string]*models.KwargTree{
+				"name": {Value: &models.Expr{Kind: models.ExprLiteralString, Text: `"pipeline"`}},
+			}},
+		},
+		models.RepoInventory{},
+		true},
+	{"ADK-112 fires when ParallelAgent has no description", "ADK-112",
+		models.AgentDef{
+			SDK: models.SDKGoogleADK, Class: "ParallelAgent",
+			Language: models.LanguagePython, Name: "fanout",
+			Kwargs: &models.KwargTree{Children: map[string]*models.KwargTree{
+				"name": {Value: &models.Expr{Kind: models.ExprLiteralString, Text: `"fanout"`}},
+			}},
+		},
+		models.RepoInventory{},
+		true},
+	{"ADK-112 fires when LoopAgent has no description", "ADK-112",
+		models.AgentDef{
+			SDK: models.SDKGoogleADK, Class: "LoopAgent",
+			Language: models.LanguagePython, Name: "refine",
+			Kwargs: &models.KwargTree{Children: map[string]*models.KwargTree{
+				"name":           {Value: &models.Expr{Kind: models.ExprLiteralString, Text: `"refine"`}},
+				"max_iterations": {Value: &models.Expr{Kind: models.ExprLiteralInt, Text: "3"}},
+			}},
+		},
+		models.RepoInventory{},
+		true},
+	{"ADK-112 silent when the workflow agent has a description", "ADK-112",
+		models.AgentDef{
+			SDK: models.SDKGoogleADK, Class: "SequentialAgent",
+			Language: models.LanguagePython, Name: "pipeline",
+			Kwargs: &models.KwargTree{Children: map[string]*models.KwargTree{
+				"name":        {Value: &models.Expr{Kind: models.ExprLiteralString, Text: `"pipeline"`}},
+				"description": {Value: &models.Expr{Kind: models.ExprLiteralString, Text: `"Drafts, reviews, and revises a support reply before it is sent."`}},
+			}},
+		},
+		models.RepoInventory{},
+		false},
 }
 
 func TestPolicyAgentRules(t *testing.T) {
