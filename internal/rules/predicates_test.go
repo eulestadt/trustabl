@@ -432,9 +432,12 @@ def foo(x: str) -> dict:
 
 // ─── has_raise / has_try_except on TypeScript ─────────────────────────────────
 
-// tsErrorContractCases covers one snippet per TS discovery path. All six share
+// tsErrorContractCases covers one snippet per TS discovery path. All six
+// (Claude SDK, LangChain, Vercel AI, OpenAI Agents, MCP, Google ADK) share
 // tsHandlerFacts, so a regression in the fact walk would surface here rather
 // than in whichever pack happened to ship the first TS error-contract rule.
+// ADK is the one that reads the handler off the execute key
+// (ts_adk_tools.go), so it is worth pinning separately from the factory shapes.
 var tsErrorContractCases = []struct {
 	name     string
 	kind     models.ToolKind
@@ -550,6 +553,37 @@ server.registerTool("search", { description: "Search the docs", inputSchema: { q
   } catch (e) {
     return { content: [{ type: "text", text: "error" }], isError: true };
   }
+});
+`,
+	},
+	{
+		name: "google_adk",
+		kind: models.KindADKFunctionTool,
+		throwing: `
+import { FunctionTool } from "@google/adk";
+const t = new FunctionTool({
+  name: "lookup",
+  description: "Look up.",
+  parameters: { id: "" },
+  execute: async ({ id }) => {
+    if (!id) throw new Error("id required");
+    return id;
+  },
+});
+`,
+		caught: `
+import { FunctionTool } from "@google/adk";
+const t = new FunctionTool({
+  name: "lookup",
+  description: "Look up.",
+  parameters: { id: "" },
+  execute: async ({ id }) => {
+    try {
+      return id;
+    } catch (e) {
+      return "error";
+    }
+  },
 });
 `,
 	},
